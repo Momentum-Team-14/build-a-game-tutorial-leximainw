@@ -93,6 +93,23 @@ function input(key, value) {
 }
 
 function update(dt){
+    // check random powerups
+    if (Math.random() < 1 - Math.pow(0.95, dt)) {
+        const brickIndex = Math.floor(Math.random() * gameState.bricks.length)
+        const brick = gameState.bricks[brickIndex]
+
+        // pick random key from object (StackOverflow):
+        // https://stackoverflow.com/questions/2532218/pick-random-property-from-a-javascript-object
+        const effectNames = Object.keys(effects).filter(x => !gameState.bricks.some(y => y.effect == x))
+        if (effectNames.length != 0) {
+            const effectName = effectNames[Math.floor(Math.random() * effectNames.length)]
+            const effect = effects[effectName]
+            brick.color = effect.color
+            brick.onBreak = effects[effectName].callback
+            brick.effect = effectName
+        }
+    }
+
     const keys = gameState.keys
     for (const ball of gameState.balls) {
         ball.position.x += ball.velocity.x * dt
@@ -272,33 +289,6 @@ function resetLevel()
                 health: 1
             }
             gameState.bricks.push(brick)
-
-            if (x == 4 && y == 4) {
-                brick.color = 'ba00ff'
-                brick.onBreak = () => {
-                    gameState.paddle.width *= 2
-                }
-            }
-
-            if (x == 11 && y == 4) {
-                brick.color = 'ff0000'
-                brick.onBreak = ball => {
-                    const velx = ball.velocity.x
-                    const vely = ball.velocity.y
-                    const velLen = Math.sqrt(velx * velx + vely * vely)
-                    const angle = 2 * Math.PI * Math.random()
-                    for (let i = 0; i < 2; i++) {
-                        gameState.balls.push({
-                            color: ball.color,
-                            position: {x: ball.position.x, y: ball.position.y},
-                            radius: ball.radius,
-                            velocity: {x: velLen * Math.cos(angle), y: velLen * Math.sin(angle)},
-                            targetSpeed: ball.targetSpeed
-                        })
-                    }
-                }
-                brick.ignoreForWin = true
-            }
         }
     }
 
@@ -313,4 +303,34 @@ function resetLevel()
 
     gameState.paddle.position.x = 7.2
     gameState.paddle.velocity.x = 0
+}
+
+const effects = {
+    widePaddle: {
+        color: 'ba00ff',
+        callback: _ => {
+        gameState.paddle.width *= 2
+    }},
+    tinyPaddle: {
+        color: 'ff0000',
+        callback: _ => {
+        gameState.paddle.width /= 2
+    }},
+    multiball: {
+        color: '0000ff',
+        callback: ball => {
+        const velx = ball.velocity.x
+        const vely = ball.velocity.y
+        const velLen = Math.sqrt(velx * velx + vely * vely)
+        const angle = 2 * Math.PI * Math.random()
+        for (let i = 0; i < 2; i++) {
+            gameState.balls.push({
+                color: ball.color,
+                position: {x: ball.position.x, y: ball.position.y},
+                radius: ball.radius,
+                velocity: {x: velLen * Math.cos(angle), y: velLen * Math.sin(angle)},
+                targetSpeed: ball.targetSpeed
+            })
+        }
+    }}
 }
