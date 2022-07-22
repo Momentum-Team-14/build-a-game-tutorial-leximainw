@@ -103,6 +103,7 @@ function update(dt){
         for (const brick of gameState.bricks) {
             if (checkCollision(ball, brick)) {
                 hitBricks.push(brick)
+                brick.lastHit = ball
             }
         }
         checkCollision(ball, gameState.paddle)
@@ -111,6 +112,9 @@ function update(dt){
         if (hitBricks.length) {
             for (const brick of hitBricks) {
                 brick.health--
+            }
+            for (const brick of hitBricks.filter(x => x.health <= 0 && x.onBreak)) {
+                brick.onBreak(brick.lastHit)
             }
             gameState.bricks = gameState.bricks.filter(x => x.health > 0)
         }
@@ -259,14 +263,42 @@ function resetLevel()
     gameState.bricks = []
     for (let y = 0; y < 5; y++) {
         for (let x = 0; x < 16; x++) {
-            gameState.bricks.push({
+            const brick = {
                 color: 'bababa',
                 position: {x: x * 0.9 + 0.45, y: y * 0.5 + 2.6},
                 width: 0.9,
                 height: 0.5,
                 radius: 0,
                 health: 1
-            })
+            }
+            gameState.bricks.push(brick)
+
+            if (x == 4 && y == 4) {
+                brick.color = 'ba00ff'
+                brick.onBreak = () => {
+                    gameState.paddle.width *= 2
+                }
+            }
+
+            if (x == 11 && y == 4) {
+                brick.color = 'ff0000'
+                brick.onBreak = ball => {
+                    const velx = ball.velocity.x
+                    const vely = ball.velocity.y
+                    const velLen = Math.sqrt(velx * velx + vely * vely)
+                    const angle = 2 * Math.PI * Math.random()
+                    for (let i = 0; i < 2; i++) {
+                        gameState.balls.push({
+                            color: ball.color,
+                            position: {x: ball.position.x, y: ball.position.y},
+                            radius: ball.radius,
+                            velocity: {x: velLen * Math.cos(angle), y: velLen * Math.sin(angle)},
+                            targetSpeed: ball.targetSpeed
+                        })
+                    }
+                }
+                brick.ignoreForWin = true
+            }
         }
     }
 
