@@ -10,7 +10,8 @@ const gameState = {
         width: 2,
         height: 0.4,
         radius: 0.2,
-        velocity: {x: 0, y: 0}
+        velocity: {x: 0, y: 0},
+        isEllipse: true
     },
     width: 14.4,
     height: 10.8,
@@ -45,8 +46,13 @@ function draw(context) {
             brick.width, brick.height, brick.color)
     }
     const paddle = gameState.paddle
-    roundedRect(paddle.position.x, paddle.position.y,
-        paddle.width, paddle.height, paddle.radius, paddle.color)
+    if (paddle.isEllipse) {
+        ellipse(paddle.position.x, paddle.position.y,
+            paddle.width, paddle.height, paddle.color)
+    } else {
+        roundedRect(paddle.position.x, paddle.position.y,
+            paddle.width, paddle.height, paddle.radius, paddle.color)
+    }
     context.restore()
 
     function circle(x, y, r, c) {
@@ -54,7 +60,17 @@ function draw(context) {
         context.arc(x, y, r, 0, 2 * Math.PI)
         context.fillStyle = `#${c}`
         context.fill()
-        context.closePath()
+    }
+
+    function ellipse(x, y, w, h, c) {
+        context.save()
+        context.translate(x, y)
+        context.scale(w, h)
+        context.beginPath()
+        context.arc(0, 0, 0.5, 0, 2 * Math.PI)
+        context.fillStyle = `#${c}`
+        context.fill()
+        context.restore()
     }
     
     function rect(x, y, w, h, c) {
@@ -62,7 +78,6 @@ function draw(context) {
         context.rect(x - w / 2, y - h / 2, w, h)
         context.fillStyle = `#${c}`
         context.fill()
-        context.closePath()
     }
 
     function roundedRect(x, y, w, h, r, c) {
