@@ -29,7 +29,9 @@ function gameLoop() {
     const dt = (now - gameState.lastUpdate) / (gameState.bullet ? 10000 : 1000)
     gameState.lastUpdate = now
 
-    update(dt)
+    for (let i = 0; i < 4; i++) {
+        update(dt / 4)
+    }
     context.clearRect(0, 0, canvas.width, canvas.height)
     draw(context)
 }
