@@ -33,6 +33,37 @@ const brickColors = [
     'e0baff'
 ]
 
+const effects = {
+    widePaddle: {
+        color: 'ba00ff',
+        callback: _ => {
+        gameState.paddle.width *= 2
+    }},
+    // tinyPaddle: {
+    //     color: 'ff0000',
+    //     badPowerup: true,
+    //     callback: _ => {
+    //     gameState.paddle.width /= 2
+    // }},
+    multiball: {
+        color: '0000ff',
+        callback: ball => {
+        const velx = ball.velocity.x
+        const vely = ball.velocity.y
+        const velLen = Math.sqrt(velx * velx + vely * vely)
+        for (let i = 0; i < 2; i++) {
+            const angle = 2 * Math.PI * Math.random()
+            gameState.balls.push({
+                color: ball.color,
+                position: {x: ball.position.x, y: ball.position.y},
+                radius: ball.radius,
+                velocity: {x: velLen * Math.cos(angle), y: velLen * Math.sin(angle)},
+                targetSpeed: ball.targetSpeed
+            })
+        }
+    }}
+}
+
 createLevel()
 document.addEventListener('keydown', e => input(e.key, true))
 document.addEventListener('keyup', e => input(e.key, false))
@@ -40,16 +71,27 @@ const gameInterval = setInterval(gameLoop, 1)
 function gameLoop() {
     // get elapsed interval
     const now = Date.now()
-    const dt = (now - gameState.lastUpdate) / (gameState.bullet ? 10000 : 1000)
+    const dt = Math.min(50, (now - gameState.lastUpdate)
+        / (gameState.bullet ? 10000 : 1000))
     gameState.lastUpdate = now
 
-    for (let i = 0; i < 4; i++) {
-        if (!update(dt / 4)) {
-            gameState.lastUpdate = Date.now()
+    if (gameState.skipUpdate) {
+        gameState.skipUpdate = false
+    } else {
+        for (let i = 0; i < 4; i++) {
+            if (!update(dt / 4)) {
+                gameState.skipUpdate = true
+                return
+            }
         }
     }
     if (!gameState.bricks.some(x => !x.badPowerup)) {
         gameState.currLevel++
+        if (!levelData[gameState.currLevel]) {
+            alert("Game over - you win!")
+            gameState.currLevel = 0
+            gameState.skipUpdate = true
+        }
         createLevel()
     }
     context.clearRect(0, 0, canvas.width, canvas.height)
@@ -141,7 +183,7 @@ function input(key, value) {
 
 function update(dt){
     // check random powerups
-    if (Math.random() < 1 - Math.pow(0.95, dt)) {
+    if (gameState.randomPowerups && Math.random() < 1 - Math.pow(0.95, dt)) {
         const candidateBricks = gameState.bricks.filter(x => x.health == 1 && !x.onBreak)
         const brickIndex = Math.floor(Math.random() * candidateBricks.length)
         const brick = candidateBricks[brickIndex]
@@ -434,57 +476,37 @@ function createLevel(levelNum)
     ]
 
     // level-specific setup
-    for (const brick of levelData[gameState.currLevel]) {
+    const level = levelData[gameState.currLevel]
+    const bricks = level.bricks
+    for (const brick of bricks) {
         const brickPos = {
             x: brick.position.x,
             y: brick.position.y
         }
-        gameState.bricks.push({
+        const newBrick = {
             position: brickPos,
             width: brick.width,
             height: brick.height,
             radius: brick.radius,
-            health: brick.health,
-            onBreak: brick.onBreak
-        })
+            health: brick.health
+        }
+        if (effects[brick.onBreak]) {
+            newBrick.color = effects[brick.onBreak].color
+            newBrick.badPowerup = effects[brick.onBreak].badPowerup
+            newBrick.onBreak = effects[brick.onBreak].callback
+        }
+        gameState.bricks.push(newBrick)
     }
+    gameState.randomPowerups = level.randomPowerups
 
     // generic color setup
     for (const brick of gameState.bricks) {
-        if (brick.health == Infinity) {
+        if (brick.onBreak) {
+            continue
+        } else if (brick.health == Infinity) {
             brick.color = brickColors[0]
         } else {
             brick.color = brickColors[brick.health]
         }
     }
-}
-
-const effects = {
-    widePaddle: {
-        color: 'ba00ff',
-        callback: _ => {
-        gameState.paddle.width *= 2
-    }},
-    // tinyPaddle: {
-    //     color: 'ff0000',
-    //     callback: _ => {
-    //     gameState.paddle.width /= 2
-    // }},
-    multiball: {
-        color: '0000ff',
-        callback: ball => {
-        const velx = ball.velocity.x
-        const vely = ball.velocity.y
-        const velLen = Math.sqrt(velx * velx + vely * vely)
-        for (let i = 0; i < 2; i++) {
-            const angle = 2 * Math.PI * Math.random()
-            gameState.balls.push({
-                color: ball.color,
-                position: {x: ball.position.x, y: ball.position.y},
-                radius: ball.radius,
-                velocity: {x: velLen * Math.cos(angle), y: velLen * Math.sin(angle)},
-                targetSpeed: ball.targetSpeed
-            })
-        }
-    }}
 }
