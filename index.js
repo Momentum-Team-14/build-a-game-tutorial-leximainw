@@ -222,6 +222,7 @@ function update(dt){
         let vectorImpact = false
         let impactX
         let impactY
+        let impactThreshold
         if (brick.isEllipse) {
             const impactPoint = closestPointOnEllipse(
                 brick.width / 2, brick.height / 2, {
@@ -230,6 +231,7 @@ function update(dt){
                 })
             impactX = impactPoint.x + brick.position.x
             impactY = impactPoint.y + brick.position.y
+            impactThreshold = ball.radius
             vectorImpact = true
         } else {
             if (absdx < brick.width / 2 - brick.radius) {
@@ -259,6 +261,7 @@ function update(dt){
                 impactY = clamp(ball.position.y,
                     brick.position.y - brick.height / 2 + brick.radius,
                     brick.position.y + brick.height / 2 - brick.radius)
+                impactThreshold = ball.radius + brick.radius
                 vectorImpact = true
             }
         }
@@ -267,7 +270,7 @@ function update(dt){
             let impactVecY = ball.position.y - impactY
             const impactVecLen = Math.sqrt(impactVecX * impactVecX
                 + impactVecY * impactVecY)
-            if (impactVecLen > ball.radius + brick.radius) {
+            if (impactVecLen > impactThreshold) {
                 return false
             }
             impactVecX /= impactVecLen
