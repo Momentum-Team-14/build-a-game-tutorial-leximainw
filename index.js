@@ -17,10 +17,23 @@ const gameState = {
     height: 10.8,
     lastUpdate: Date.now(),
     keys: {},
-    lives: 2
+    lives: 2,
+    currLevel: 0
 }
 
-resetLevel()
+const brickColors = [
+    '000000',
+    'bababa',
+    'babaff',
+    'baffff',
+    'baffba',
+    'ffffba',
+    'ffe0ba',
+    'ffbaba',
+    'e0baff'
+]
+
+createLevel()
 document.addEventListener('keydown', e => input(e.key, true))
 document.addEventListener('keyup', e => input(e.key, false))
 const gameInterval = setInterval(gameLoop, 1)
@@ -32,9 +45,12 @@ function gameLoop() {
 
     for (let i = 0; i < 4; i++) {
         if (!update(dt / 4)) {
-            clearInterval(gameInterval)
-            return
+            gameState.lastUpdate = Date.now()
         }
+    }
+    if (!gameState.bricks.some(x => !x.badPowerup)) {
+        gameState.currLevel++
+        createLevel()
     }
     context.clearRect(0, 0, canvas.width, canvas.height)
     draw(context)
@@ -126,8 +142,9 @@ function input(key, value) {
 function update(dt){
     // check random powerups
     if (Math.random() < 1 - Math.pow(0.95, dt)) {
-        const brickIndex = Math.floor(Math.random() * gameState.bricks.length)
-        const brick = gameState.bricks[brickIndex]
+        const candidateBricks = gameState.bricks.filter(x => x.health == 1 && !x.onBreak)
+        const brickIndex = Math.floor(Math.random() * candidateBricks.length)
+        const brick = candidateBricks[brickIndex]
 
         // pick random key from object (from Lawrence Whiteside on StackOverflow):
         // https://stackoverflow.com/questions/2532218/pick-random-property-from-a-javascript-object
@@ -160,6 +177,11 @@ function update(dt){
         if (hitBricks.length) {
             for (const brick of hitBricks) {
                 brick.health--
+                if (brick.health == Infinity) {
+                    brick.color = brickColors[0]
+                } else {
+                    brick.color = brickColors[brick.health]
+                }
             }
             for (const brick of hitBricks.filter(x => x.health <= 0 && x.onBreak)) {
                 brick.onBreak(brick.lastHit)
@@ -193,10 +215,11 @@ function update(dt){
 
     const paddle = gameState.paddle
     gameState.balls = gameState.balls.filter(x => x.position.y < gameState.height + x.radius)
-    if (!gameState.balls.length && !paddle.shooting) {
+    if (!gameState.gameOver && !gameState.balls.length && !paddle.shooting) {
         if (gameState.lives <= 0) {
             alert("Out of lives - game over!")
-            return false
+            gameState.gameOver = true
+            return true
         } else {
             gameState.lives--
             const newBall = {
@@ -392,45 +415,48 @@ function update(dt){
     return true
 }
 
-function resetLevel()
+function createLevel(levelNum)
 {
+    // generic misc setup
+    gameState.paddle.width = 2
+    gameState.paddle.position.x = 7.2
+    gameState.paddle.velocity.x = 0
+    gameState.keys = {}
+    gameState.bricks = []
     gameState.balls = [
         {
             color: '0000ff',
             position: {x: 4.95, y: 6.5},
-            // position: {x: 7.2, y: 9.6},
             radius: 0.3,
             velocity: {x: 4.5, y: 6},
-            // velocity: {x: 4, y: -4},
             targetSpeed: 7.5
         }
     ]
-    gameState.bricks = []
-    for (let y = 0; y < 5; y++) {
-        for (let x = 0; x < 16; x++) {
-            const brick = {
-                color: 'bababa',
-                position: {x: x * 0.9 + 0.45, y: y * 0.5 + 2.6},
-                width: 0.9,
-                height: 0.5,
-                radius: 0,
-                health: 1
-            }
-            gameState.bricks.push(brick)
+
+    // level-specific setup
+    for (const brick of levelData[gameState.currLevel]) {
+        const brickPos = {
+            x: brick.position.x,
+            y: brick.position.y
         }
+        gameState.bricks.push({
+            position: brickPos,
+            width: brick.width,
+            height: brick.height,
+            radius: brick.radius,
+            health: brick.health,
+            onBreak: brick.onBreak
+        })
     }
 
-    // gameState.bricks.push({
-    //     color: '000',
-    //     position: {x: 10.2, y: 6.6 },
-    //     width: 1,
-    //     height: 1,
-    //     radius: 0,
-    //     health: Infinity
-    // })
-
-    gameState.paddle.position.x = 7.2
-    gameState.paddle.velocity.x = 0
+    // generic color setup
+    for (const brick of gameState.bricks) {
+        if (brick.health == Infinity) {
+            brick.color = brickColors[0]
+        } else {
+            brick.color = brickColors[brick.health]
+        }
+    }
 }
 
 const effects = {
@@ -439,11 +465,11 @@ const effects = {
         callback: _ => {
         gameState.paddle.width *= 2
     }},
-    tinyPaddle: {
-        color: 'ff0000',
-        callback: _ => {
-        gameState.paddle.width /= 2
-    }},
+    // tinyPaddle: {
+    //     color: 'ff0000',
+    //     callback: _ => {
+    //     gameState.paddle.width /= 2
+    // }},
     multiball: {
         color: '0000ff',
         callback: ball => {
