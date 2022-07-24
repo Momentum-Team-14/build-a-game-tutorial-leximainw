@@ -16,13 +16,14 @@ const gameState = {
     width: 14.4,
     height: 10.8,
     lastUpdate: Date.now(),
-    keys: {}
+    keys: {},
+    lives: 2
 }
 
 resetLevel()
 document.addEventListener('keydown', e => input(e.key, true))
 document.addEventListener('keyup', e => input(e.key, false))
-setInterval(gameLoop, 1)
+const gameInterval = setInterval(gameLoop, 1)
 function gameLoop() {
     // get elapsed interval
     const now = Date.now()
@@ -30,7 +31,10 @@ function gameLoop() {
     gameState.lastUpdate = now
 
     for (let i = 0; i < 4; i++) {
-        update(dt / 4)
+        if (!update(dt / 4)) {
+            clearInterval(gameInterval)
+            return
+        }
     }
     context.clearRect(0, 0, canvas.width, canvas.height)
     draw(context)
@@ -54,6 +58,12 @@ function draw(context) {
     } else {
         roundedRect(paddle.position.x, paddle.position.y,
             paddle.width, paddle.height, paddle.radius, paddle.color)
+    }
+    const newBall = paddle.shooting
+    if (newBall) {
+        circle(paddle.position.x,
+            paddle.position.y - paddle.height / 2 - newBall.radius,
+            newBall.radius, newBall.color)
     }
     context.restore()
 
@@ -104,7 +114,11 @@ function input(key, value) {
             gameState.keys.right = value
             break
         case ' ':
-            gameState.bullet = value
+            if (gameState.paddle.shooting) {
+                gameState.paddle.shoot = value
+            } else {
+                gameState.bullet = value
+            }
             break
     }
 }
@@ -176,7 +190,24 @@ function update(dt){
             }
         }
     }
+
     const paddle = gameState.paddle
+    gameState.balls = gameState.balls.filter(x => x.position.y < gameState.height + x.radius)
+    if (!gameState.balls.length && !paddle.shooting) {
+        if (gameState.lives <= 0) {
+            alert("Out of lives - game over!")
+            return false
+        } else {
+            gameState.lives--
+            const newBall = {
+                color: '0000ff',
+                radius: 0.3,
+                targetSpeed: 7.5
+            }
+            paddle.shooting = newBall
+        }
+    }
+
     paddle.position.x += paddle.velocity.x * dt
     paddle.position.y += paddle.velocity.y * dt
 
@@ -205,6 +236,22 @@ function update(dt){
         }
     } else {
         paddle.velocity.x *= Math.pow(0.5, dt)
+    }
+
+    const newBall = paddle.shooting
+    if (paddle.shoot && paddle.shooting) {
+        newBall.position = {
+            x: paddle.position.x,
+            y: paddle.position.y - paddle.height / 2 - newBall.radius
+        }
+        const velx = clamp(paddle.velocity.x, newBall.targetSpeed * -0.8,
+            newBall.targetSpeed * 0.8)
+        newBall.velocity = {
+            x: velx,
+            y: Math.sqrt(newBall.targetSpeed * newBall.targetSpeed - velx * velx)
+        }
+        paddle.shoot = paddle.shooting = undefined
+        gameState.balls.push(newBall)
     }
 
     function checkCollision(ball, brick) {
@@ -341,6 +388,8 @@ function update(dt){
             y: Math.abs(b * ty) * Math.sign(p.y)
         }
     }
+
+    return true
 }
 
 function resetLevel()
