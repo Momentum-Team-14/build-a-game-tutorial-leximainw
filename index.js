@@ -11,7 +11,7 @@ const gameState = {
         height: 0.4,
         radius: 0.2,
         velocity: {x: 0, y: 0},
-        isEllipse: true
+        isEllipse: false
     },
     width: 14.4,
     height: 10.8,
@@ -167,6 +167,11 @@ function update(dt){
                 ball.position.y = 2 * ball.radius - ball.position.y
                 ball.velocity.y *= -1
             }
+        } else if (gameState.noWell && ball.position.y > gameState.height - ball.radius) {
+            if (ball.velocity.y > 0) {
+                ball.position.y = 2 * (gameState.height - ball.radius) - ball.position.y
+                ball.velocity.y *= -1
+            }
         }
     }
     const paddle = gameState.paddle
@@ -212,49 +217,53 @@ function update(dt){
             relvx -= brick.velocity.x
             relvy -= brick.velocity.y
         }
-        if (absdx < brick.width / 2 - brick.radius) {
-            if (ball.position.y < brick.position.y) {
-                if (ball.velocity.y > 0) {
-                    relvy *= -1
-                }
-            } else if (ball.position.y > brick.position.y) {
-                if (ball.velocity.y < 0) {
-                    relvy *= -1
-                }
-            }
-        } else if (absdy < brick.height / 2 - brick.radius) {
-            if (ball.position.x < brick.position.x) {
-                if (ball.velocity.x > 0) {
-                    relvx *= -1
-                }
-            } else if (ball.position.x > brick.position.x) {
-                if (ball.velocity.x < 0) {
-                    relvx *= -1
-                }
-            }
+        if (brick.isEllipse) {
+
         } else {
-            const impactX = clamp(ball.position.x,
-                brick.position.x - brick.width / 2 + brick.radius,
-                brick.position.x + brick.width / 2 - brick.radius)
-            const impactY = clamp(ball.position.y,
-                brick.position.y - brick.height / 2 + brick.radius,
-                brick.position.y + brick.height / 2 - brick.radius)
-            let impactVecX = ball.position.x - impactX
-            let impactVecY = ball.position.y - impactY
-            const impactVecLen = Math.sqrt(impactVecX * impactVecX
-                + impactVecY * impactVecY)
-            if (impactVecLen > ball.radius + brick.radius) {
-                return false
+            if (absdx < brick.width / 2 - brick.radius) {
+                if (ball.position.y < brick.position.y) {
+                    if (ball.velocity.y > 0) {
+                        relvy *= -1
+                    }
+                } else if (ball.position.y > brick.position.y) {
+                    if (ball.velocity.y < 0) {
+                        relvy *= -1
+                    }
+                }
+            } else if (absdy < brick.height / 2 - brick.radius) {
+                if (ball.position.x < brick.position.x) {
+                    if (ball.velocity.x > 0) {
+                        relvx *= -1
+                    }
+                } else if (ball.position.x > brick.position.x) {
+                    if (ball.velocity.x < 0) {
+                        relvx *= -1
+                    }
+                }
+            } else {
+                const impactX = clamp(ball.position.x,
+                    brick.position.x - brick.width / 2 + brick.radius,
+                    brick.position.x + brick.width / 2 - brick.radius)
+                const impactY = clamp(ball.position.y,
+                    brick.position.y - brick.height / 2 + brick.radius,
+                    brick.position.y + brick.height / 2 - brick.radius)
+                let impactVecX = ball.position.x - impactX
+                let impactVecY = ball.position.y - impactY
+                const impactVecLen = Math.sqrt(impactVecX * impactVecX
+                    + impactVecY * impactVecY)
+                if (impactVecLen > ball.radius + brick.radius) {
+                    return false
+                }
+                impactVecX /= impactVecLen
+                impactVecY /= impactVecLen
+                const impactDot = relvx * impactVecX
+                    + relvy * impactVecY
+                if (impactDot > 0) {
+                    return false
+                }
+                relvx -= 2 * impactDot * impactVecX
+                relvy -= 2 * impactDot * impactVecY
             }
-            impactVecX /= impactVecLen
-            impactVecY /= impactVecLen
-            const impactDot = relvx * impactVecX
-                + relvy * impactVecY
-            if (impactDot > 0) {
-                return false
-            }
-            relvx -= 2 * impactDot * impactVecX
-            relvy -= 2 * impactDot * impactVecY
         }
         if (brick.velocity) {
             relvx += brick.velocity.x
@@ -276,6 +285,10 @@ function update(dt){
         } else {
             return value
         }
+    }
+
+    function distancePointEllipse(e0, e1, y0, y1) {
+
     }
 }
 
@@ -337,8 +350,8 @@ const effects = {
         const velx = ball.velocity.x
         const vely = ball.velocity.y
         const velLen = Math.sqrt(velx * velx + vely * vely)
-        const angle = 2 * Math.PI * Math.random()
         for (let i = 0; i < 2; i++) {
+            const angle = 2 * Math.PI * Math.random()
             gameState.balls.push({
                 color: ball.color,
                 position: {x: ball.position.x, y: ball.position.y},
