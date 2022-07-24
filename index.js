@@ -39,12 +39,12 @@ const effects = {
         callback: _ => {
         gameState.paddle.width *= 2
     }},
-    // tinyPaddle: {
-    //     color: 'ff0000',
-    //     badPowerup: true,
-    //     callback: _ => {
-    //     gameState.paddle.width /= 2
-    // }},
+    tinyPaddle: {
+        color: 'ff0000',
+        badPowerup: true,
+        callback: _ => {
+        gameState.paddle.width /= 2
+    }},
     multiball: {
         color: '0000ff',
         callback: ball => {
