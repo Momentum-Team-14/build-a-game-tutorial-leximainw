@@ -11,7 +11,7 @@ const gameState = {
         height: 0.4,
         radius: 0.2,
         velocity: {x: 0, y: 0},
-        isEllipse: false
+        isEllipse: true
     },
     width: 14.4,
     height: 10.8,
@@ -22,7 +22,7 @@ const gameState = {
 resetLevel()
 document.addEventListener('keydown', e => input(e.key, true))
 document.addEventListener('keyup', e => input(e.key, false))
-setInterval(gameLoop, 10)
+setInterval(gameLoop, 1)
 function gameLoop() {
     // get elapsed interval
     const now = Date.now()
@@ -219,8 +219,18 @@ function update(dt){
             relvx -= brick.velocity.x
             relvy -= brick.velocity.y
         }
+        let vectorImpact = false
+        let impactX
+        let impactY
         if (brick.isEllipse) {
-
+            const impactPoint = closestPointOnEllipse(
+                brick.width / 2, brick.height / 2, {
+                    x: ball.position.x - brick.position.x,
+                    y: ball.position.y - brick.position.y
+                })
+            impactX = impactPoint.x + brick.position.x
+            impactY = impactPoint.y + brick.position.y
+            vectorImpact = true
         } else {
             if (absdx < brick.width / 2 - brick.radius) {
                 if (ball.position.y < brick.position.y) {
@@ -243,29 +253,32 @@ function update(dt){
                     }
                 }
             } else {
-                const impactX = clamp(ball.position.x,
+                impactX = clamp(ball.position.x,
                     brick.position.x - brick.width / 2 + brick.radius,
                     brick.position.x + brick.width / 2 - brick.radius)
-                const impactY = clamp(ball.position.y,
+                impactY = clamp(ball.position.y,
                     brick.position.y - brick.height / 2 + brick.radius,
                     brick.position.y + brick.height / 2 - brick.radius)
-                let impactVecX = ball.position.x - impactX
-                let impactVecY = ball.position.y - impactY
-                const impactVecLen = Math.sqrt(impactVecX * impactVecX
-                    + impactVecY * impactVecY)
-                if (impactVecLen > ball.radius + brick.radius) {
-                    return false
-                }
-                impactVecX /= impactVecLen
-                impactVecY /= impactVecLen
-                const impactDot = relvx * impactVecX
-                    + relvy * impactVecY
-                if (impactDot > 0) {
-                    return false
-                }
-                relvx -= 2 * impactDot * impactVecX
-                relvy -= 2 * impactDot * impactVecY
+                vectorImpact = true
             }
+        }
+        if (vectorImpact) {
+            let impactVecX = ball.position.x - impactX
+            let impactVecY = ball.position.y - impactY
+            const impactVecLen = Math.sqrt(impactVecX * impactVecX
+                + impactVecY * impactVecY)
+            if (impactVecLen > ball.radius + brick.radius) {
+                return false
+            }
+            impactVecX /= impactVecLen
+            impactVecY /= impactVecLen
+            const impactDot = relvx * impactVecX
+                + relvy * impactVecY
+            if (impactDot > 0) {
+                return false
+            }
+            relvx -= 2 * impactDot * impactVecX
+            relvy -= 2 * impactDot * impactVecY
         }
         if (brick.velocity) {
             relvx += brick.velocity.x
@@ -289,8 +302,41 @@ function update(dt){
         }
     }
 
-    function distancePointEllipse(e0, e1, y0, y1) {
+    // get closest point on an ellipse (StackOverflow):
+    // https://stackoverflow.com/questions/22959698/distance-from-given-point-to-given-ellipse
+    function closestPointOnEllipse(semiaxisx, semiaxisy, p) {
+        const px = Math.abs(p.x)
+        const py = Math.abs(p.y)
+        let tx = ty = 1 / Math.sqrt(2)   // roughly 0.7071067
+        const a = semiaxisx
+        const b = semiaxisy
 
+        for (let i = 0; i < 3; i++) {
+            const x = a * tx
+            const y = b * ty
+
+            const ex = (a * a - b * b) * tx ** 3 / a
+            const ey = (b * b - a * a) * ty ** 3 / b
+
+            const rx = x - ex
+            const ry = y - ey
+            const qx = px - ex
+            const qy = py - ey
+
+            const r = Math.sqrt(rx * rx + ry * ry)
+            const q = Math.sqrt(qx * qx + qy * qy)
+
+            tx = clamp((qx * r / q + ex) / a, 0, 1)
+            ty = clamp((qy * r / q + ey) / b, 0, 1)
+            const t = Math.sqrt(tx * tx + ty * ty)
+            tx /= t
+            ty /= t
+        }
+
+        return {
+            x: Math.abs(a * tx) * Math.sign(p.x),
+            y: Math.abs(b * ty) * Math.sign(p.y)
+        }
     }
 }
 
