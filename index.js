@@ -129,7 +129,7 @@ function update(dt){
         const brickIndex = Math.floor(Math.random() * gameState.bricks.length)
         const brick = gameState.bricks[brickIndex]
 
-        // pick random key from object (StackOverflow):
+        // pick random key from object (from Lawrence Whiteside on StackOverflow):
         // https://stackoverflow.com/questions/2532218/pick-random-property-from-a-javascript-object
         const effectNames = Object.keys(effects).filter(x => !gameState.bricks.some(y => y.effect == x))
         if (effectNames.length != 0) {
@@ -352,7 +352,7 @@ function update(dt){
         }
     }
 
-    // get closest point on an ellipse (StackOverflow):
+    // get closest point on an ellipse (from user364952 on StackOverflow):
     // https://stackoverflow.com/questions/22959698/distance-from-given-point-to-given-ellipse
     function closestPointOnEllipse(semiaxisx, semiaxisy, p) {
         const px = Math.abs(p.x)
