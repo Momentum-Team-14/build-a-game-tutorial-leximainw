@@ -22,6 +22,8 @@ const gameState = {
     score: 0
 }
 
+const debugMode = false
+
 const brickColors = [
     '000000',
     'bababa',
@@ -87,14 +89,7 @@ function gameLoop() {
         }
     }
     if (!gameState.bricks.some(x => !x.badPowerup)) {
-        gameState.currLevel++
-        if (!levelData[gameState.currLevel]) {
-            alert("Game over - you win!")
-            gameState.currLevel = 0
-            gameState.skipUpdate = true
-            gameState.score = 0
-        }
-        createLevel()
+        advanceLevel()
     }
     context.clearRect(0, 0, canvas.width, canvas.height)
     draw(context)
@@ -187,14 +182,19 @@ function input(key, value) {
         case ' ':
             if (gameState.paddle.shooting) {
                 gameState.paddle.shoot = value
-            } else {
+            } else if (debugMode) {
                 gameState.bullet = value
+            }
+            break
+        case 's':
+            if (debugMode) {
+                advanceLevel()
             }
             break
     }
 }
 
-function update(dt){
+function update(dt) {
     // check random powerups
     if (gameState.randomPowerups && Math.random() < 1 - Math.pow(0.95, dt)) {
         const candidateBricks = gameState.bricks.filter(x => x.health == 1 && !x.onBreak)
@@ -475,8 +475,18 @@ function update(dt){
     return true
 }
 
-function createLevel(levelNum)
-{
+function advanceLevel() {
+    gameState.currLevel++
+    if (!levelData[gameState.currLevel]) {
+        alert("Game over - you win!")
+        gameState.currLevel = 0
+        gameState.skipUpdate = true
+        gameState.score = 0
+    }
+    createLevel()
+}
+
+function createLevel(levelNum) {
     // generic misc setup
     gameState.paddle.width = 2
     gameState.paddle.position.x = 7.2
