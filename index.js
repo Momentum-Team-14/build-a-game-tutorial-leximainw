@@ -187,7 +187,7 @@ function input(key, value) {
             }
             break
         case 's':
-            if (debugMode) {
+            if (debugMode && value) {
                 advanceLevel()
             }
             break
