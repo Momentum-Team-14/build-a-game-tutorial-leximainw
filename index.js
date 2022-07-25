@@ -18,7 +18,8 @@ const gameState = {
     lastUpdate: Date.now(),
     keys: {},
     lives: 2,
-    currLevel: 0
+    currLevel: 0,
+    score: 0
 }
 
 const brickColors = [
@@ -91,6 +92,7 @@ function gameLoop() {
             alert("Game over - you win!")
             gameState.currLevel = 0
             gameState.skipUpdate = true
+            gameState.score = 0
         }
         createLevel()
     }
@@ -124,6 +126,17 @@ function draw(context) {
             newBall.radius, newBall.color)
     }
     context.restore()
+
+    context.lineWidth = 1.5
+    context.font = "bold 1.5rem 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+    context.strokeStyle = '#f0f0f0'
+    context.fillStyle = '#303030'
+    context.textAlign = 'start'
+    context.strokeText(`Score: ${gameState.score}`, 30, 40)
+    context.fillText(`Score: ${gameState.score}`, 30, 40)
+    context.textAlign = 'end'
+    context.strokeText(`Lives: ${gameState.lives}`, 1410, 40)
+    context.fillText(`Lives: ${gameState.lives}`, 1410, 40)
 
     function circle(x, y, r, c) {
         context.beginPath()
@@ -211,6 +224,11 @@ function update(dt){
             if (checkCollision(ball, brick)) {
                 hitBricks.push(brick)
                 brick.lastHit = ball
+                if (!brick.onBreak) {
+                    gameState.score += 10
+                } else if (!brick.badPowerup) {
+                    gameState.score += 100
+                }
             }
         }
         checkCollision(ball, gameState.paddle)
