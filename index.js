@@ -70,7 +70,7 @@ const effects = {
 createLevel()
 document.addEventListener('keydown', e => input(e.key, true))
 document.addEventListener('keyup', e => input(e.key, false))
-const gameInterval = setInterval(gameLoop, 1)
+const gameInterval = setInterval(gameLoop, 10)
 function gameLoop() {
     // get elapsed interval
     const now = Date.now()
